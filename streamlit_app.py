@@ -264,15 +264,16 @@ def main():
     if max_price > 0:
         # Use log scale for better price range handling
         price_range = st.sidebar.slider(
-            "Price Range (total):",
+            "Price Range (total, as % of 1-cent):",
             min_value=0.0,
-            max_value=float(max_price),
-            value=(0.0, float(max_price)),
-            step=float(max_price) / 1000 if max_price > 0.001 else 0.0001,
-            format="%.6f",
+            max_value=float(max_price * 100),
+            value=(0.0, float(max_price * 100)),
+            step=0.001,
+            format="%.3f",
         )
     else:
         price_range = (0.0, 0.0)
+    price_range = [i / 100 for i in price_range]
 
     # Context length filter with 4k increments
     max_context = df["context_length"].max()
@@ -309,8 +310,12 @@ def main():
     else:
         selected_params = []
 
-    # Free models only
-    free_only = st.sidebar.checkbox("Show only free models")
+    # Free/Paid model filters
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        free_only = st.checkbox("Only free")
+    with col2:
+        skip_free = st.checkbox("Skip free")
 
     # Apply filters
     filtered_df = df[
@@ -337,6 +342,8 @@ def main():
 
     if free_only:
         filtered_df = filtered_df[filtered_df["is_free"] == True]
+    elif skip_free:
+        filtered_df = filtered_df[filtered_df["is_free"] == False]
 
     if filtered_df.empty:
         st.warning("No models match the current filters. Please adjust your selection.")
@@ -437,7 +444,7 @@ def main():
     # Additional insights
     st.header("💡 Insights")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
 
     with col1:
         st.subheader("Top Providers by Model Count")
@@ -453,6 +460,8 @@ def main():
             title="Models by Modality",
         )
         st.plotly_chart(fig_pie, use_container_width=True)
+
+    col3, col4 = st.columns(2)
 
     with col3:
         st.subheader("Total Price Distribution")
@@ -470,6 +479,19 @@ def main():
             labels={"total_price": "Total Price", "count": "Number of Models"},
         )
         st.plotly_chart(fig_hist, use_container_width=True)
+
+    with col4:
+        st.subheader("Models by Creator")
+        creator_counts = filtered_df["creator"].value_counts().head(15)
+        fig_creator = px.bar(
+            x=creator_counts.values,
+            y=creator_counts.index,
+            orientation="h",
+            title="Top Creators by Model Count",
+            labels={"x": "Number of Models", "y": "Creator"},
+        )
+        fig_creator.update_layout(yaxis={"categoryorder": "total ascending"})
+        st.plotly_chart(fig_creator, use_container_width=True)
 
 
 if __name__ == "__main__":
