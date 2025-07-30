@@ -150,6 +150,17 @@ def main():
     st.markdown(
         "Compare different models available on OpenRouter showcasing their performance and capabilities."
     )
+    # Inject custom CSS to set the width of the sidebar
+    st.markdown(
+        """
+        <style>
+            section[data-testid="stSidebar"] {
+                width: 500px !important; # Set the width to your desired value
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     # Load data
     with st.spinner("Loading model data from OpenRouter API..."):
@@ -194,7 +205,7 @@ def main():
         )
 
     # Size options with better labeling
-    enable_bubble_size = st.sidebar.checkbox("Enable bubble size", value=True)
+    enable_bubble_size = st.sidebar.checkbox("Enable bubble size", value=False)
 
     size_column = None
     if enable_bubble_size:
